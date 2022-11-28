@@ -1,0 +1,116 @@
+#+title: DD2360HT22_HW2_Willenbrink_Sebastian
+
+* Repository
+https://github.com/Willenbrink/AGP/tree/master/hw_2/ex_4/rodinia_3.1
+
+* Exercise 1 - Reflection on GPU-accelerated Computing
+** Task 1
+List the main differences between GPUs and CPUs in terms of architecture.
+*** CPU
+- Latency-oriented architecture
+- Large caches
+- Out-of-order execution
+- Speculative execution
+- Pipelining
+*** GPU
+- Throughput-oriented architecture
+- Simple cores
+- Small caches
+- Lots of ALUs
+- Longer latency on a single task
+- Massive tasks in parallel
+
+*** Task 2 and 3
+Check the latest Top500 list that ranks the top 500 most powerful supercomputers in the world. In the top 10, how many supercomputers use GPUs? Report the name of the supercomputers and their GPU vendor (Nvidia, AMD, ...) and model.
+
+One main advantage of GPU is its power efficiency, which can be quantified by Performance/Power, e.g., throughput as in FLOPS per watt power consumption. Calculate the power efficiency for the top 10 supercomputers. (Hint: use the table in the first lecture)
+
+Supercomputers with GPU accelerators: 8
+| Name              | Vendor | Model           | PFlops/kW |
+|-------------------+--------+-----------------+-----------|
+| Frontier          | AMD    | Instinct MI250X |     0.052 |
+| Fugaku            | N/A    | N/A             |     0.015 |
+| LUMI              | AMD    | Instinct MI250X |     0.051 |
+| Leonardo          | Nvidia | Ampere A100     |     0.031 |
+| Summit            | Nvidia | Tesla V100      |     0.015 |
+| Sierra            | Nvidia | Tesla V100      |     0.013 |
+| Sunway TaihuLight | N/A    | N/A             |     0.006 |
+| Perlmutter        | Nvidia | Ampere A100     |     0.027 |
+| Selene            | Nvidia | Ampere A100     |     0.024 |
+| Tianhe-2A         | NUDT   | Matrix 2000     |     0.003 |
+
+* Exercise 2 - Device Query
+
+In the first assignment, you are asked to measure GPU-CPU bandwidth using the bandwidthTest utility that is included in CUDA SDK. In the same utility folder, a deviceQuery test is provided (i.e., 1_Utilities/deviceQuery) to query some architectural specifications on the GPU that you are running on.
+
+Revisit the instructions in assignment 1 on how to compile and run the utility tests either in the KTH computer room or the Google Colab platform.
+
+** The screenshot of the output from you running deviceQuery test.
+[[./deviceQuery.png]]
+
+** What architectural specifications do you find interesting and critical for performance? Please provide a brief description.
+- Total amount of global memory
+
+  Relevant to determine the maximum size of input data
+- Multiprocessors, Cores/MP
+
+  Relevant to determine execution speed
+- Memory clock rate and bus width
+
+  Relevant for transferring data, e.g. from CPU to GPU
+
+** How do you calculate the GPU memory bandwidth (in GB/s) using the output from deviceQuery? (Hint: memory bandwidth is typically determined by clock rate and bus width, and check what double date rate (DDR) may impact the bandwidth)
+Presumably it is, due to DDR RAM: $clock\_rate \cdot bus\_width \cdot 2 = 320 GB/s$
+
+** Compare your calculated GPU memory bandwidth with Nvidia published specification on that architecture. Are they consistent?
+Yes.
+
+* Exercise 3 - Compare GPU Architecture
+
+Use the Internet to search to find 3 latest Nvidia GPU architectures in which you are interested. Pick a specific model for each selected architecture, and answer the following questions:
+
+** List 3 main changes in architecture (e.g., L2 cache size, cores, memory, notable new hardware features, etc.)
+| Architecture | L2 Cache Size | Cores | Memory | Manufacturing process |
+|--------------+---------------+-------+--------+-----------------------|
+| Hopper       | 51200KB       | 16896 | 80GB   | 4nm                   |
+| Ampere       | 40960KB       |  6912 | 80GB   | 7nm                   |
+| Volta        | 6144KB        |  5120 | 32GB   | 12nm                  |
+
+** List the number of SMs, the number of cores per SM, the clock frequency and calculate their theoretical peak throughput.
+| Architecture | Number of SMs | Cores/SM | Clock frequency | Peak Throughput |
+|--------------+---------------+----------+-----------------+-----------------|
+| Hopper       |           144 |      128 | 1780MHz         | 2278 GB/s       |
+| Ampere       |           128 |       64 | 1410MHz         | 1805 GB/s       |
+| Volta        |            80 |       64 | 1530MHz         | 1567 GB/s       |
+
+Compared where the H100, A100 80GB and the V100 32GB.
+** Compare (1) and (2) with the NVIDIA GPU that you are using for the course.
+The Tesla T4 is inferior in many regards:
+- Memory at 15GB
+- Cores at 2560 Cores
+- Peak throughput at 320 GB/s
+
+It is superior in clock frequency at 5001 MHz to all above cards. These differences stem from the fact that the examined GPUs target data centers with different requirements.
+
+* Exercise 4 - Rodinia CUDA benchmarks and Profiling
+** Compile both OMP and CUDA versions of your selected benchmarks. Do you need to make any changes in Makefile?
+No. Only time measurements were added and irrelevant benchmarks removed.
+
+** Ensure the same input problem is used for OMP and CUDA versions. Report and compare their execution time.
+*** LU-Decomposition
+Ensuring the exact same inputs was not possible as the provided example input files did not work with the CUDA version. Using a random matrix of size 1000 resulted in relatively reliable results with at most 5% deviation.
+OMP: 109 ms
+CUDA: 12 ms
+
+*** Needle-Wunsch
+Required adding a measurement for the CUDA version. For input sizes 4096, penalty 10 and 1 thread we obtain:
+OMP: 0.072s
+CUDA: 0.051s
+
+*** BFS
+Required adding a measurement to the CUDA version. For input graph1MW_6.txt and 1 thread, we obtain:
+OMP: 0.066s
+CUDA: 0.004s
+
+** Do you observe expected speedup on GPU compared to CPU? Why or Why not?
+    Unfortunately, this is hard to judge. Without knowing how easy the algorithms are parallelizable I do not have any expectations regarding speedups. BFS is very simple to parallelize but what about LU-decomposition and Needle-Wunsch? Apparently Needle-Wunsch does not benefit that much whereas LU-decomposition, which I also assumed to be difficult to parallelize, benefits quite significantly.
