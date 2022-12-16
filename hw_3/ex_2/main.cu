@@ -86,20 +86,21 @@ int main(int argc, char **argv) {
           // Row-major
           DataType val = dis(gen);
           hostA[r * numAColumns + c] = val;
-          printf("%.1f ", val);
+          //fprintf(stderr, "%.1f ", val);
       }
-      printf("\n");
+      //fprintf(stderr, "\n");
   }
-  printf("\n");
+  //fprintf(stderr, "\n");
   for(int r = 0; r < numBRows; r++) {
       for(int c = 0; c < numBColumns; c++) {
           // Row-major
           DataType val = dis(gen);
           hostB[r * numBColumns + c] = val;
-          printf("%.1f ", val);
+          //fprintf(stderr, "%.1f ", val);
       }
-      printf("\n");
+      //fprintf(stderr, "\n");
   }
+  /*
   for(int r = 0; r < numCRows; r++) {
       for(int c = 0; c < numCColumns; c++) {
           // Row-major
@@ -111,6 +112,7 @@ int main(int argc, char **argv) {
           resultRef[r * numCColumns + c] = res;
       }
   }
+  */
 
   //@@ Insert code below to allocate GPU memory here
   cudaMalloc(&deviceA, numARows * numAColumns * sizeof(DataType));
@@ -144,6 +146,7 @@ int main(int argc, char **argv) {
   printf("Copying from device in %li mus\n", endTimer(start));
 
   //@@ Insert code below to compare the output with the reference
+  /*
   for(int r = 0; r < numCRows; r++) {
       for(int c = 0; c < numCColumns; c++) {
           DataType res_cpu = resultRef[r * numCColumns + c];
@@ -152,11 +155,12 @@ int main(int argc, char **argv) {
               printf("Deviation too large\n%f - %f\n", res_gpu, res_cpu);
           } else {
               // printf("Accurate result\n");
-              printf("%.1f ", res_gpu);
+              //fprintf(stderr, "%.1f ", res_gpu);
           }
       }
-      printf("\n");
+      //fprintf(stderr, "\n");
   }
+  */
 
 
   //@@ Free the GPU memory here

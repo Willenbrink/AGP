@@ -1,10 +1,12 @@
 #+title: A03
 
+#+LATEX_HEADER: \setcounter{tocdepth}{1}
+
 * Exercise 1
 ** Explain how the program is compiled and run.
 Compilation is done with nvcc. Execution is done directly from the commandline.
 #+begin_src
-nvcc main.cu -o main
+nvcc -arch=sm_61 -g main.cu -o main
 ./main 1024
 #+end_src
 
@@ -111,13 +113,15 @@ Copying from device in 12 mus
     ---------------------------------------------------------------------- --------------- ------------------------------
 
 #+end_src
+
+In the end, I focussed on getting access to a desktop with a GPU (which tremendiously sped up development when compared to Google Colab). Unfortunately the GTX 1080, which I used, does not support profiling. So even this change did not allow me to use Nsight.
 ** Now increase the vector length to 131070:
 *** Did your program still work? If not, what changes did you make?
 It worked.
 *** Explain how many CUDA threads and thread blocks you used.
 The same as above, i.e. 32 threads per block and $131070$ threads. The number of blocks is thus $(131070 + 32 - 1) / 32 = 4096$.
 *** Profile your program with Nvidia Nsight. What Achieved Occupancy do you get now?
-Still does not work.
+Does not work due to the reason above.
 ** Further increase the vector length (try 6-10 different vector length), plot a stacked bar chart showing the breakdown of time including (1) data copy from host to device (2) the CUDA kernel (3) data copy from device to host. For this, you will need to add simple CPU timers to your code regions.
     | Input Length in Multiples of 131070 | To Device | Kernel | From Device |
     |-------------------------------------+-----------+--------+-------------|
@@ -135,14 +139,72 @@ Still does not work.
 
 * Exercise 2
 ** Name three applications domains of matrix multiplication.
+AI, computer graphics, solving linear equations (i.e. linear program optimization).
 ** How many floating operations are being performed in your matrix multiply kernel? 
+numAColumns
 ** How many global memory reads are being performed by your kernel?
+numAColumns * 2 + 1
 ** For a matrix A of (128x128) and B of (128x128):
 *** Explain how many CUDA threads and thread blocks you used. 
+32 threads per block and 128 * 128 / 32 blocks. 128 * 128 threads.
 *** Profile your program with Nvidia Nsight. What Achieved Occupancy did you get? 
+Does not work due to the reason above.
 ** For a matrix A of (511x1023) and B of (1023x4094):
 *** Did your program still work? If not, what changes did you make?
+Yes. At least, both CPU and GPU return the same results.
 *** Explain how many CUDA threads and thread blocks you used.
+511*4094 threads. 511*4094/32 blocks.
 *** Profile your program with Nvidia Nsight. What Achieved Occupancy do you get now?
+Does not work due to the reason above.
 ** Further increase the size of matrix A and B, plot a stacked bar chart showing the breakdown of time including (1) data copy from host to device (2) the CUDA kernel (3) data copy from device to host. For this, you will need to add simple CPU timers to your code regions. Explain what you observe.
+[[./ex_2/double.png]]
+The kernel execution time dominates for all input sizes which is natural as each cell in the output is the sum of thousands of multiplications. As a result, the memory size is negligible in relation to the number of computations.
 ** Now, change DataType from double to float, re-plot the a stacked bar chart showing the time breakdown. Explain what you observe. 
+[[./ex_2/float.png]]
+Using floats instead of doubles significantly speeds up the computation. Nevertheless, the speedup is significantly lower than might be expected. Although each float is only half the size of a double, its multiplication is almost as expensive. As the multiplications dominate the execution time the impact as not that large in the end.
+
+* Exercise 3
+** Describe all optimizations you tried regardless of whether you committed to them or abandoned them and whether they improved or hurt performance. 
+- Adapt blocksize to the problem. 4096 for saturation, size of input for the counting.
+- Have a thread for every bin instead of for every input. This would require only 4096 threads but no atomics would be needed.
+- Use shared memory.
+** Which optimizations you chose in the end and why? 
+Only the first one. Having only 4096 threads iterating the whole input decreases parallelism significantly. Looping is also not as efficient on GPUs due to lacking a branch predictor.
+
+Shared memory was not used as it is not obvious how this would be done. Each part of the input may contain any integer, i.e. be related to any bin. Therefore, putting the bins into the shared memory is not easily possible. Having a copy of all the bins for each block (and adding the results of each block afterwards) was assumed to be slower as this multiplies the amount of required memory.
+** How many global memory reads are being performed by your kernel? Explain 
+Two for every execution of the counting. Once to read the input value, once to read the value from the bin before adding one.
+
+One for every execution of the saturation. A bins value is checked and, if larger than 127, set to 127.
+
+** How many atomic operations are being performed by your kernel? Explain
+One for each input. We add 1 to the value of the bin.
+
+** How much shared memory is used in your code? Explain
+None. Instead we use the global memory directly.
+
+** How would the value distribution of the input array affect the contention among threads? For instance, what contentions would you expect if every element in the array has the same value? 
+The value distribution affects the contention significantly. If each input was the same value, we would expect almost 100% contention as each thread atomically adds to the same bin.
+
+** Plot a histogram generated by your code and specify your input length, thread block and grid.
+[[./ex_3/histo.png]]
+
+This histogram has been generated using an input length of 100000 (larger values saturate all bins). Note that the graphing done with matplotlib shows some artifacts for higher values. The distance between the bars bears no significance.
+
+I kept a thread per block number of 32 and created one thread for every input. This results in $100000 / 32 = 3125$ blocks.
+
+** For a input array of 1024 elements, profile with Nvidia Nsight and report Shared Memory Configuration Size and Achieved Occupancy. Did Nvsight report any potential performance issues?
+Does not work due to the reason above.
+
+* Exercise 4
+** Describe the environment you used, what changes you made to the Makefile, and how you ran the simulation.
+GTX 1080 on a Linux desktop running openSUSE Tumbleweed. The architecture was set to sm_62. Besides that, no changes where made to the Makefile. It was executed by simply passing the input file to the program.
+** Describe your design of the GPU implementation of mover_PC() briefly. 
+We define a wrapper mover_PC_gpu and a kernel mover_PC_kernel. One thread executing the kernel handles moving one particle, i.e. one iteration of the "Move each particle with new fields" loop. Subcycling is handled by the wrapper.
+
+The wrapper allocates all of the memory by first creating copies on the host, replacing the pointers with device memory and then copying this to the device. We use exclusively flat arrays.
+** Compare the output of both CPU and GPU implementation to guarantee that your GPU implementations produce correct answers.
+When viewed through paraview, the rho_net files looked identical. I assumed that this was sufficiently accurate.
+
+** Compare the execution time of your GPU implementation with its CPU version.
+The Mover Time / Cycle is 0.136 for the GPU version of the program. The CPU version has about 1.7, i.e. a ten times larger value.
