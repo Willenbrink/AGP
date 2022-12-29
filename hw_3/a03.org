@@ -2,6 +2,11 @@
 
 #+LATEX_HEADER: \setcounter{tocdepth}{1}
 
+* Git Repository
+https://github.com/Willenbrink/AGP
+
+Apparently, I had some error in my cuda files previously which resulted in nsight failing in unexpected ways. It works now and I updated the submission accordingly.
+
 * Exercise 1
 ** Explain how the program is compiled and run.
 Compilation is done with nvcc. Execution is done directly from the commandline.
@@ -19,109 +24,15 @@ $2N$. $5N$ in the unlikely case that blockIdx/blockDim/threadIdx are also stored
 ** For a vector length of 1024:
 *** Explain how many CUDA threads and thread blocks you used.
 I used 32 threads per block and $(1024 + 32 - 1) / 32 = 32$ blocks. This results in $1024$ threads in total.
-*** Profile your program with Nvidia Nsight. What Achieved Occupancy did you get? You might find https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html#nvprof-metric-comparison
-I could not get nsight to work on Google Colab. Running the nsight-cli directly fails due to a missing metric. Selecting for specifically achieved occupancy fails with a nondescript error.
-#+begin_src
-!nv-nsight-cu-cli main 1024
-
-The input length is 1024
-==PROF== Connected to process 524 (/content/main)
-Copying to device in 52 mus
-==PROF== Profiling "vecAdd" - 1: 0%....50%....100% - 1 pass
-
-==ERROR== LaunchFailed
-Adding in 446948 mus
-Copying from device in 12 mus
-==PROF== Disconnected from process 524
-==ERROR== An error occurred while trying to profile.
-[524] main@127.0.0.1
-  vecAdd(double*, double*, double*, int), 2022-Dec-12 19:35:32, Context 1, Stream 7
-    Section: GPU Speed Of Light
-    ---------------------------------------------------------------------- --------------- ------------------------------
-    DRAM Frequency                                                                                                (!) n/a
-    SM Frequency                                                                                                  (!) n/a
-    Elapsed Cycles                                                                                                (!) n/a
-    Memory [%]                                                                                                    (!) n/a
-    SOL DRAM                                                                                                      (!) n/a
-    Duration                                                                                                      (!) n/a
-    SOL L1/TEX Cache                                                                                              (!) n/a
-    SOL L2 Cache                                                                                                  (!) n/a
-    SM Active Cycles                                                                                              (!) n/a
-    SM [%]                                                                                                        (!) n/a
-    ---------------------------------------------------------------------- --------------- ------------------------------
-    ERR   Rule Bottleneck returned an error: Metric launch__waves_per_multiprocessor not found
-    ----- --------------------------------------------------------------------------------------------------------------
-    ERR   <built-in function IAction_metric_by_name> returned a result with an error set
-/root/Documents/NVIDIA Nsight
-           Compute/2020.3.1/Sections/SpeedOfLight.py:45
-/opt/nvidia/nsight-compute/2020.3.1/target/linux-desktop-glibc_2
-          _11_3-x64/../../sections/NvRules.py:302
-
-    Section: Launch Statistics
-    ---------------------------------------------------------------------- --------------- ------------------------------
-    Block Size                                                                                                    (!) n/a
-    Function Cache Configuration                                                                                  (!) n/a
-    Grid Size                                                                                                     (!) n/a
-    Registers Per Thread                                                                                          (!) n/a
-    Shared Memory Configuration Size                                                                              (!) n/a
-    Driver Shared Memory Per Block                                                                                (!) n/a
-    Dynamic Shared Memory Per Block                                                                               (!) n/a
-    Static Shared Memory Per Block                                                                                (!) n/a
-    Threads                                                                                                       (!) n/a
-    Waves Per SM                                                                                                  (!) n/a
-    ---------------------------------------------------------------------- --------------- ------------------------------
-    ERR   Rule Launch Configuration returned an error: Metric launch__block_size not found
-    ----- --------------------------------------------------------------------------------------------------------------
-    ERR   <built-in function IAction_metric_by_name> returned a result with an error set
-/root/Documents/NVIDIA Nsight
-           Compute/2020.3.1/Sections/LaunchStatistics.py:45
-/opt/nvidia/nsight-compute/2020.3.1/target/linux-desktop-gli
-          bc_2_11_3-x64/../../sections/NvRules.py:302
-
-    Section: Occupancy
-    ---------------------------------------------------------------------- --------------- ------------------------------
-    Block Limit SM                                                                                                (!) n/a
-    Block Limit Registers                                                                                         (!) n/a
-    Block Limit Shared Mem                                                                                        (!) n/a
-    Block Limit Warps                                                                                             (!) n/a
-    Theoretical Active Warps per SM                                                                               (!) n/a
-    Theoretical Occupancy                                                                                         (!) n/a
-    Achieved Occupancy                                                                                            (!) n/a
-    Achieved Active Warps Per SM                                                                                  (!) n/a
-    ---------------------------------------------------------------------- --------------- ------------------------------
-#+end_src
-
-With only a specific metric:
-#+begin_src
-!nv-nsight-cu-cli --metrics sm__warps_active.avg.pct_of_peak_sustained_active main 1024
-
-The input length is 1024
-==PROF== Connected to process 572 (/content/main)
-Copying to device in 49 mus
-==PROF== Profiling "vecAdd" - 1: 0%....50%....100% - 1 pass
-
-==ERROR== LaunchFailed
-Adding in 364672 mus
-Copying from device in 12 mus
-==PROF== Disconnected from process 572
-==ERROR== An error occurred while trying to profile.
-[572] main@127.0.0.1
-  vecAdd(double*, double*, double*, int), 2022-Dec-12 19:38:11, Context 1, Stream 7
-    Section: Command line profiler metrics
-    ---------------------------------------------------------------------- --------------- ------------------------------
-    sm__warps_active.avg.pct_of_peak_sustained_active                                                             (!) n/a
-    ---------------------------------------------------------------------- --------------- ------------------------------
-
-#+end_src
-
-In the end, I focussed on getting access to a desktop with a GPU (which tremendiously sped up development when compared to Google Colab). Unfortunately the GTX 1080, which I used, does not support profiling. So even this change did not allow me to use Nsight.
+*** Profile your program with Nvidia Nsight. What Achieved Occupancy did you get?
+3.12%
 ** Now increase the vector length to 131070:
 *** Did your program still work? If not, what changes did you make?
 It worked.
 *** Explain how many CUDA threads and thread blocks you used.
 The same as above, i.e. 32 threads per block and $131070$ threads. The number of blocks is thus $(131070 + 32 - 1) / 32 = 4096$.
 *** Profile your program with Nvidia Nsight. What Achieved Occupancy do you get now?
-Does not work due to the reason above.
+32.90%
 ** Further increase the vector length (try 6-10 different vector length), plot a stacked bar chart showing the breakdown of time including (1) data copy from host to device (2) the CUDA kernel (3) data copy from device to host. For this, you will need to add simple CPU timers to your code regions.
     | Input Length in Multiples of 131070 | To Device | Kernel | From Device |
     |-------------------------------------+-----------+--------+-------------|
@@ -134,28 +45,29 @@ Does not work due to the reason above.
 
     [[./ex_1/ex1.png]]
 
-    The results seem unrealistic but as the time measurement seems correct to me and the result is correct, it is presumably correct due to optimizations in Cuda.
+    The results seem unrealistic as copying from the device is significantly faster than copying to the device. As the time measurement seems correct to me and the result is correct, it is presumably correct and caused by optimizations in Cuda.
 
 
 * Exercise 2
 ** Name three applications domains of matrix multiplication.
 AI, computer graphics, solving linear equations (i.e. linear program optimization).
 ** How many floating operations are being performed in your matrix multiply kernel? 
-numAColumns
+Each kernel execution has numAColumns operations.
+Due to the numCRows * numCColumns executions, this comes out to numAColumns * numCRows * numCColumns.
 ** How many global memory reads are being performed by your kernel?
-numAColumns * 2 + 1
+(numAColumns * 2 + 1) * numCRows * numCColumns.
 ** For a matrix A of (128x128) and B of (128x128):
 *** Explain how many CUDA threads and thread blocks you used. 
 32 threads per block and 128 * 128 / 32 blocks. 128 * 128 threads.
 *** Profile your program with Nvidia Nsight. What Achieved Occupancy did you get? 
-Does not work due to the reason above.
+37.24%
 ** For a matrix A of (511x1023) and B of (1023x4094):
 *** Did your program still work? If not, what changes did you make?
 Yes. At least, both CPU and GPU return the same results.
 *** Explain how many CUDA threads and thread blocks you used.
 511*4094 threads. 511*4094/32 blocks.
 *** Profile your program with Nvidia Nsight. What Achieved Occupancy do you get now?
-Does not work due to the reason above.
+49.89
 ** Further increase the size of matrix A and B, plot a stacked bar chart showing the breakdown of time including (1) data copy from host to device (2) the CUDA kernel (3) data copy from device to host. For this, you will need to add simple CPU timers to your code regions. Explain what you observe.
 [[./ex_2/double.png]]
 The kernel execution time dominates for all input sizes which is natural as each cell in the output is the sum of thousands of multiplications. As a result, the memory size is negligible in relation to the number of computations.
@@ -194,7 +106,9 @@ This histogram has been generated using an input length of 100000 (larger values
 I kept a thread per block number of 32 and created one thread for every input. This results in $100000 / 32 = 3125$ blocks.
 
 ** For a input array of 1024 elements, profile with Nvidia Nsight and report Shared Memory Configuration Size and Achieved Occupancy. Did Nvsight report any potential performance issues?
-Does not work due to the reason above.
+convert_kernel achieved acceptable results at 9.59% occupancy. Cuda warns that "This kernel grid is too small to fill the available resources on this device, resulting in only 0.2 full waves across all SMs. Look at Launch Statistics for more details." Whether optimising this kernel (when compared to total execution time) is worthwhile is questionable.
+
+The histogram_kernel did not achieve satisfactory results. With only 3.12% occupancy and the warning "This kernel grid is too small to fill the available resources on this device, resulting in only 0.1 full waves across all SMs. Look at Launch Statistics for more details." Presumably, creating a copy of the bins for each block is worth the effort.
 
 * Exercise 4
 ** Describe the environment you used, what changes you made to the Makefile, and how you ran the simulation.
