@@ -25,3 +25,35 @@ The performance benefits are negligible across all relevant input sizes as the v
 
 We get almost perfect usage of the GPU by using exactly two segments. Due to their overhead, further increasing the number of segments degrades performance.
 [[./ex_2/ex1_2.png]]
+
+* Exercise 3
+** What are the differences between pageable memory and pinned memory, what are the tradeoffs?
+Pageable memory uses address tables to be swappable and oversubscribable. It generally gives the OS more opportunities to manage the memory as the actual address in memory is not the same as is shown to the program (i.e. virtual adresses).
+
+Pinned memory is at a fixed location in memory and therefore is quicker to access, helping reduce memory access times.
+
+** Compare the profiling results between your original code and the new version using pinned memory. Do you see any difference in terms of the breakdown of execution time after changing to pinned memory?
+Device to Host is significantly faster. Host to Device is minimally faster. Besides that the changes are minimal.
+
+** What is a managed memory? What are the implications of using managed memory?
+Managed memory allows programmers to ignore memcpys from/to the device as Cuda automatically takes care of that. Thus, it lowers the barrier to writing simple Cuda programs.
+
+** Compare the profiling results between your original code and the new version using managed memory. What do you observe in the profiling results?
+Memcpy is no longer explicitly listed. UM results in a significant slowdown. Whereas before the GPU activies took 12ms, they now took 17ms.
+
+* Exercise 4
+I could not solve this task because I ran into a problem with the matrix-vector multiplication. Things I investigated:
+- Normal execution: It throws an error at the next line (cublasDnrm2) and crashes in the thrust call.
+- gdb and cuda-gdb. With gdb, no crash occurs, with cuda-gdb no backtrace is printed. Loading the coredump fails. cuda-gdb shows a CUDA_EXCEPTION_14: Warp Illegal Address. I found no problem with the allocations.
+- Reading the documentation. The error code given by the next call does not match any of the possible values. Furthermore, only one algorithm (CUSPARSE_SPMV_COO_ALG2) is listed as supported. It is not clear whether this is a problem with the documentation or not.
+- cuda-memcheck. Fails without information.
+- Running on Google Colab. Same issue.
+- Comparing with sample (https://github.com/NVIDIA/CUDALibrarySamples/blob/master/cuSPARSE/spmv_csr/spmv_csr_example.c). Executing the sample works, thereby eliminating GPU/toolchain issues. The only difference I found in the code is the usage of managed memory. Potentially, rewriting the whole program to use unmanaged memory will help. As I'm not sure if this helps and due to the large amount of effort for likely no gain, I did not try this.
+
+  Sidenote: I did not use the provided src_cpp{cusparseMatDescr_t Adescriptor} and instead used src_cpp{cusparseSpMatDescr_t}, i.e. a sparse matrix descriptor. I think this is a mistake in the template?
+** Run the program with different dimX values. For each one, approximate the FLOPS (floating-point operation per second) achieved in computing the SMPV (sparse matrix multiplication). Report FLOPS at different input sizes in a FLOPS. What do you see compared to the peak throughput you report in Lab2?
+TODO
+** Run the program with dimX=128 and vary nsteps from 100 to 10000. Plot the relative error of the approximation at different nstep. What do you observe?
+TODO
+** Compare the performance with and without the prefetching in Unified Memory. How is the performance impact? [Optional: using nvprof to get metrics on UM]
+TODO
