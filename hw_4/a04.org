@@ -1,0 +1,27 @@
+#+title: A04
+
+#+LATEX_HEADER: \setcounter{tocdepth}{1}
+
+* Git Repository
+https://github.com/Willenbrink/AGP
+
+* Exercise 1
+** X=800 Y=600
+There exist $\lceil 800/16 \rceil \cdot \lceil 600/16 \rceil = 50 \cdot 38 = 1900$ blocks. Each block consists of $16 \cdot 16$ threads and $16 \cdot 16 / 32 = 8$ warps as each warp consists of 32 threads.
+
+Assuming the correct distribution of threads across the warps, none will have control divergence. As each column of threads within a block executes the same instructions, the threads must be assigned in a column-major order to the warps. In this case, the right-most blocks will have 4 warps completely within the image and 4 warps completely without.
+
+If the assignment is done in a row-major order, all warps in the right-most column will diverge, resulting in $38 \cdot 8$ diverging warps.
+
+** X=600 Y=800
+In this case, the incomplete blocks are located in the bottom row. The reasoning is simply an inversion of the previous case. If we assume a row-major order, we will now have no diverging threads. If we assume column-major order, we will have $50 \cdot 8$ diverging warps as the complete bottom row of blocks will diverge.
+
+** X=600 Y=799
+In this case, both row-major and column-major assignments of threads to warps will result in divergence. Assuming row-major order, the blocks to the right will result in $38 \cdot 8$ divergin warps. The blocks at the bottom will not diverge at all.
+
+* Exercise 2
+The performance benefits are negligible across all relevant input sizes as the vast majority of the execution time is spent on copying.
+[[./ex_2/ex1.png]]
+
+We get almost perfect usage of the GPU by using exactly two segments. Due to their overhead, further increasing the number of segments degrades performance.
+[[./ex_2/ex1_2.png]]

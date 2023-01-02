@@ -6,3 +6,6 @@ tmp/
 *.pdf
 *.tex
 *.aux
+main
+*.nvprof
+*.png
