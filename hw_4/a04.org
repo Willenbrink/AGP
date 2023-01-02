@@ -48,9 +48,9 @@ I could not solve this task because I ran into a problem with the matrix-vector 
 - Reading the documentation. The error code given by the next call does not match any of the possible values. Furthermore, only one algorithm (CUSPARSE_SPMV_COO_ALG2) is listed as supported. It is not clear whether this is a problem with the documentation or not.
 - cuda-memcheck. Fails without information.
 - Running on Google Colab. Same issue.
-- Comparing with sample (https://github.com/NVIDIA/CUDALibrarySamples/blob/master/cuSPARSE/spmv_csr/spmv_csr_example.c). Executing the sample works, thereby eliminating GPU/toolchain issues. The only difference I found in the code is the usage of managed memory. Potentially, rewriting the whole program to use unmanaged memory will help. As I'm not sure if this helps and due to the large amount of effort for likely no gain, I did not try this.
+- Comparing with sample (https://github.com/NVIDIA/CUDALibrarySamples/blob/master/cuSPARSE/spmv_csr/spmv_csr_example.c). Executing the sample works, thereby eliminating GPU/toolchain issues. The only difference I found in the code is the usage of managed memory. Rewriting the whole program to use unmanaged memory might help. As I'm not sure if this helps and due to the large amount of effort for likely no gain I did not try this.
 
-  Sidenote: I did not use the provided src_cpp{cusparseMatDescr_t Adescriptor} and instead used src_cpp{cusparseSpMatDescr_t}, i.e. a sparse matrix descriptor. I think this is a mistake in the template?
+  Sidenote: I did not use the provided src_cpp[:exports code]{cusparseMatDescr_t Adescriptor}  and instead used src_cpp[:exports code]{cusparseSpMatDescr_t} , i.e. a sparse matrix descriptor. I think this is a mistake in the template?
 ** Run the program with different dimX values. For each one, approximate the FLOPS (floating-point operation per second) achieved in computing the SMPV (sparse matrix multiplication). Report FLOPS at different input sizes in a FLOPS. What do you see compared to the peak throughput you report in Lab2?
 TODO
 ** Run the program with dimX=128 and vary nsteps from 100 to 10000. Plot the relative error of the approximation at different nstep. What do you observe?
