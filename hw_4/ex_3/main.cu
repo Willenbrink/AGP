@@ -71,9 +71,12 @@ int main(int argc, char **argv) {
   printf("Input matrix dim (%d x %d) (%d x %d) (%d x %d)\n", numARows, numAColumns, numBRows, numBColumns, numCRows, numCColumns);
   
   //@@ Insert code below to allocate Host memory for input and output
-  hostA = (DataType *) malloc(numARows * numAColumns * sizeof(DataType));
-  hostB = (DataType *) malloc(numBRows * numBColumns * sizeof(DataType));
-  hostC = (DataType *) malloc(numCRows * numCColumns * sizeof(DataType));
+  // hostA = (DataType *) malloc(numARows * numAColumns * sizeof(DataType));
+  // hostB = (DataType *) malloc(numBRows * numBColumns * sizeof(DataType));
+  // hostC = (DataType *) malloc(numCRows * numCColumns * sizeof(DataType));
+  cudaMallocManaged(&hostA, numARows * numAColumns * sizeof(DataType));
+  cudaMallocManaged(&hostB, numBRows * numBColumns * sizeof(DataType));
+  cudaMallocManaged(&hostC, numCRows * numCColumns * sizeof(DataType));
   resultRef = (DataType *) malloc(numCRows * numCColumns * sizeof(DataType));
 
   
@@ -115,15 +118,18 @@ int main(int argc, char **argv) {
   */
 
   //@@ Insert code below to allocate GPU memory here
-  cudaMalloc(&deviceA, numARows * numAColumns * sizeof(DataType));
-  cudaMalloc(&deviceB, numBRows * numBColumns * sizeof(DataType));
-  cudaMalloc(&deviceC, numCRows * numCColumns * sizeof(DataType));
+  // cudaMalloc(&deviceA, numARows * numAColumns * sizeof(DataType));
+  // cudaMalloc(&deviceB, numBRows * numBColumns * sizeof(DataType));
+  // cudaMalloc(&deviceC, numCRows * numCColumns * sizeof(DataType));
+  deviceA = hostA;
+  deviceB = hostB;
+  deviceC = hostC;
 
 
   //@@ Insert code to below to Copy memory to the GPU here
   long start = startTimer();
-  cudaMemcpy(deviceA, hostA, numARows * numAColumns * sizeof(DataType), cudaMemcpyHostToDevice);
-  cudaMemcpy(deviceB, hostB, numBRows * numBColumns * sizeof(DataType), cudaMemcpyHostToDevice);
+  // cudaMemcpy(deviceA, hostA, numARows * numAColumns * sizeof(DataType), cudaMemcpyHostToDevice);
+  // cudaMemcpy(deviceB, hostB, numBRows * numBColumns * sizeof(DataType), cudaMemcpyHostToDevice);
   printf("Copying to device in %li mus\n", endTimer(start));
 
 
@@ -141,7 +147,7 @@ int main(int argc, char **argv) {
 
   //@@ Copy the GPU memory back to the CPU here
   start = startTimer();
-  cudaMemcpy(hostC, deviceC, numCRows * numCColumns * sizeof(DataType), cudaMemcpyDeviceToHost);
+  // cudaMemcpy(hostC, deviceC, numCRows * numCColumns * sizeof(DataType), cudaMemcpyDeviceToHost);
   cudaDeviceSynchronize();
   printf("Copying from device in %li mus\n", endTimer(start));
 
@@ -170,9 +176,12 @@ int main(int argc, char **argv) {
 
 
   //@@ Free the CPU memory here
-  free(hostA);
-  free(hostB);
-  free(hostC);
+  // free(hostA);
+  // free(hostB);
+  // free(hostC);
+  // cudaFreeHost(hostA);
+  // cudaFreeHost(hostB);
+  // cudaFreeHost(hostC);
   free(resultRef);
 
 
