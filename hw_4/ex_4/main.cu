@@ -182,8 +182,8 @@ int main(int argc, char **argv) {
     //@@ Insert code to call cusparse api to get the buffer size needed by the sparse matrix per
     //@@ vector (SMPV) CSR routine of cuSPARSE
     cusparseDnVecDescr_t vecX, vecY;
-    cusparseCheck(cusparseCreateDnVec(&vecX, dimX, &temp, CUDA_R_64F));
-    cusparseCheck(cusparseCreateDnVec(&vecY, dimX, &tmp, CUDA_R_64F));
+    cusparseCheck(cusparseCreateDnVec(&vecX, dimX, temp, CUDA_R_64F));
+    cusparseCheck(cusparseCreateDnVec(&vecY, dimX, tmp, CUDA_R_64F));
     cusparseCheck(cusparseSpMV_bufferSize(cusparseHandle,
                                           CUSPARSE_OPERATION_NON_TRANSPOSE,
                                           &one,
@@ -204,28 +204,10 @@ int main(int argc, char **argv) {
         //@@ Insert code to call cusparse api to compute the SMPV (sparse matrix multiplication) for
         //@@ the CSR matrix using cuSPARSE. This calculation corresponds to:
         //@@ tmp = 1 * A * temp + 0 * tmp
-        for(int i = 0; i < dimX; i++) {
-            printf("%.1f  ", temp[i]);
-        }
-        printf("\n");
-        for(int i = 0; i < dimX; i++) {
-            printf("%.1f  ", tmp[i]);
-        }
-        printf("\n^ Before\n");
-
-        //This call causes problems.
         cusparseCheck(cusparseSpMV(cusparseHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one,
                                    Adescriptor, vecX, &zero, vecY,
                                    CUDA_R_64F, CUSPARSE_SPMV_ALG_DEFAULT, buffer));
 
-        for(int i = 0; i < dimX; i++) {
-            printf("%.1f  ", temp[i]);
-        }
-        printf("\n");
-        for(int i = 0; i < dimX; i++) {
-            printf("%.1f  ", tmp[i]);
-        }
-        printf("\n^ After\n");
         //@@ Insert code to call cublas api to compute the axpy routine using cuBLAS.
         //@@ This calculation corresponds to: temp = alpha * tmp + temp
         cublasCheck(cublasDaxpy(cublasHandle, dimX, &alpha, tmp, 1, temp, 1));
