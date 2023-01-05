@@ -129,6 +129,8 @@ int main(int argc, char **argv) {
 
     cputimer_stop("Allocating device memory");
 
+    concurrentAccessQ = 0;
+
     // Check if concurrentAccessQ is non zero in order to prefetch memory
     if (concurrentAccessQ) {
         cputimer_start();
@@ -195,11 +197,11 @@ int main(int argc, char **argv) {
                                           CUSPARSE_SPMV_ALG_DEFAULT,
                                           &bufferSize));
 
-    printf("Buffer size: %i\n", bufferSize);
     //@@ Insert code to allocate the buffer needed by cuSPARSE
     gpuCheck(cudaMalloc(&buffer, bufferSize));
 
     // Perform the time step iterations
+    cputimer_start();
     for (int it = 0; it < nsteps; ++it) {
         //@@ Insert code to call cusparse api to compute the SMPV (sparse matrix multiplication) for
         //@@ the CSR matrix using cuSPARSE. This calculation corresponds to:
@@ -220,6 +222,7 @@ int main(int argc, char **argv) {
         if (norm < 1e-4)
             break;
     }
+    cputimer_stop("Perfoming multiplications");
 
     // Calculate the exact solution using thrust
     thrust::device_ptr<double> thrustPtr(tmp);
@@ -235,7 +238,7 @@ int main(int argc, char **argv) {
 
     //@@ Insert the code to call cublas api to compute the norm of the absolute error
     //@@ This calculation corresponds to: || tmp ||
-    cublasCheck(cublasDnrm2(cublasHandle, dimX, temp, 1, &norm));
+    cublasCheck(cublasDnrm2(cublasHandle, dimX, tmp, 1, &norm));
 
     error = norm;
     //@@ Insert the code to call cublas api to compute the norm of temp
@@ -249,6 +252,8 @@ int main(int argc, char **argv) {
     //@@ Insert the code to destroy the mat descriptor
     //cusparseDestroyMatDescr(Adescriptor);
     cusparseCheck(cusparseDestroySpMat(Adescriptor));
+    cusparseCheck(cusparseDestroyDnVec(vecX));
+    cusparseCheck(cusparseDestroyDnVec(vecY));
 
     //@@ Insert the code to destroy the cuSPARSE handle
     cusparseCheck(cusparseDestroy(cusparseHandle));
@@ -258,8 +263,12 @@ int main(int argc, char **argv) {
 
 
     //@@ Insert the code for deallocating memory
-
-
-
+    gpuCheck(cudaFree(buffer));
+    gpuCheck(cudaFree(A));
+    gpuCheck(cudaFree(ARowPtr));
+    gpuCheck(cudaFree(AColIndx));
+    gpuCheck(cudaFree(temp));
+    gpuCheck(cudaFree(tmp));
+    
     return 0;
 }

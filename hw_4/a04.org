@@ -42,18 +42,24 @@ Managed memory allows programmers to ignore memcpys from/to the device as Cuda a
 Memcpy is no longer explicitly listed. UM results in a significant slowdown. Whereas before the GPU activies took 12ms, they now took 17ms.
 
 * Exercise 4
-I could not solve this task because I ran into a problem with the matrix-vector multiplication. Things I investigated:
-- Normal execution: It throws an error at the next line (cublasDnrm2) and crashes in the thrust call.
-- gdb and cuda-gdb. With gdb, no crash occurs, with cuda-gdb no backtrace is printed. Loading the coredump fails. cuda-gdb shows a CUDA_EXCEPTION_14: Warp Illegal Address. I found no problem with the allocations.
-- Reading the documentation. The error code given by the next call does not match any of the possible values. Furthermore, only one algorithm (CUSPARSE_SPMV_COO_ALG2) is listed as supported. It is not clear whether this is a problem with the documentation or not.
-- cuda-memcheck. Fails without information.
-- Running on Google Colab. Same issue.
-- Comparing with sample (https://github.com/NVIDIA/CUDALibrarySamples/blob/master/cuSPARSE/spmv_csr/spmv_csr_example.c). Executing the sample works, thereby eliminating GPU/toolchain issues. The only difference I found in the code is the usage of managed memory. Rewriting the whole program to use unmanaged memory might help. As I'm not sure if this helps and due to the large amount of effort for likely no gain I did not try this.
+# I could not solve this task because I ran into a problem with the matrix-vector multiplication. Things I investigated:
+# - Normal execution: It throws an error at the next line (cublasDnrm2) and crashes in the thrust call.
+# - gdb and cuda-gdb. With gdb, no crash occurs, with cuda-gdb no backtrace is printed. Loading the coredump fails. cuda-gdb shows a CUDA_EXCEPTION_14: Warp Illegal Address. I found no problem with the allocations.
+# - Reading the documentation. The error code given by the next call does not match any of the possible values. Furthermore, only one algorithm (CUSPARSE_SPMV_COO_ALG2) is listed as supported. It is not clear whether this is a problem with the documentation or not.
+# - cuda-memcheck. Fails without information.
+# - Running on Google Colab. Same issue.
+# - Comparing with sample (https://github.com/NVIDIA/CUDALibrarySamples/blob/master/cuSPARSE/spmv_csr/spmv_csr_example.c). Executing the sample works, thereby eliminating GPU/toolchain issues. The only difference I found in the code is the usage of managed memory. Rewriting the whole program to use unmanaged memory might help. As I'm not sure if this helps and due to the large amount of effort for likely no gain I did not try this.
 
-  Sidenote: I did not use the provided src_cpp[:exports code]{cusparseMatDescr_t Adescriptor}  and instead used src_cpp[:exports code]{cusparseSpMatDescr_t} , i.e. a sparse matrix descriptor. I think this is a mistake in the template?
+#   Sidenote: I did not use the provided src_cpp[:exports code]{cusparseMatDescr_t Adescriptor}  and instead used src_cpp[:exports code]{cusparseSpMatDescr_t} , i.e. a sparse matrix descriptor. I think this is a mistake in the template?
 ** Run the program with different dimX values. For each one, approximate the FLOPS (floating-point operation per second) achieved in computing the SMPV (sparse matrix multiplication). Report FLOPS at different input sizes in a FLOPS. What do you see compared to the peak throughput you report in Lab2?
-TODO
+We require approximately $dimX \cdot 3 \cdot steps$ matrix-vector multiplications as each element of the vector is multiplied with 3 different values and we have $steps$ number of iterations. We assume $nsteps = 100$
+
+[[./ex_4/1.png]]
+
+The theoretical performance of the GTX 1080 is approximately 9 TFLOPS. We see that the matrix multiplication approaches this value with approximately 7 TFLOPS. This is surprisingly good as the code does not only conduct matrix-vector multiplications and may suggest an error in the measurement.
 ** Run the program with dimX=128 and vary nsteps from 100 to 10000. Plot the relative error of the approximation at different nstep. What do you observe?
-TODO
+[[./ex_4/2.png]]
+
+The error is logarithmic inversely related to nsteps. The gains only decrease towards 10000 nsteps.
 ** Compare the performance with and without the prefetching in Unified Memory. How is the performance impact? [Optional: using nvprof to get metrics on UM]
-TODO
+Without prefetching, an input with $dimX=10000000, nsteps=100$ takes 500ms to perform the multiplications. With prefetching it takes only 400ms, a significant improvemenet for large inputs. Surprisingly the difference is smaller for smaller inputs. With $dimX=10000$ it takes 6.3ms with prefetch and 6.8ms without, almost hidden by the measurement noise.
